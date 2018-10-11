@@ -49,7 +49,6 @@ namespace ML_FBLinearRegression
 
         public double Predict(Vector<double> x)
         {
-            return 0;
             return weights * x + b;
         }
         public Vector<double> Predict(Matrix<double> x)
