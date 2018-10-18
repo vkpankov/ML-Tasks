@@ -24,27 +24,28 @@ namespace ML_FBLinearRegression
            
             var featuresCount = weights.Count;
 
-            int i = 1;
+            int it = 1;
             double error = 1;
-            Vector<double> curWeights = Vector<double>.Build.Dense(weights.Count);
             do
             {
                 double rmse = 100;
-                for (int j = 0; j < featuresCount; j++)
-                {
-                    Vector<double> featureX = data.X.Column(j);
-                    var e = data.Y - ((weights[j] * featureX).Add(b));
-                    curWeights[j] = weights[j] - learningRate * (-2.0 / m) * e * featureX + L1RegParam * Math.Sign(weights[j]);
-                    b = b - learningRate * (-2.0 / m) * e.Sum();
-                }
-                error = (curWeights - weights).L2Norm();
-                curWeights.CopyTo(weights);
 
-                var yDiff = this.Predict(data.X) - data.Y;
-                rmse = Math.Sqrt(yDiff.PointwisePower(2).Sum() / data.Y.Count);
+                Vector<double> wGrad = Vector<double>.Build.Dense(weights.Count);
+                double bGrad = 0;
+
+                var e = data.Y - this.Predict(data.X);
+                for (int i = 0; i < data.X.ColumnCount; i++)
+                    wGrad[i] += e * data.X.Column(i);
+                bGrad = e.Sum() * -2.0 / m;
+                wGrad *= -2.0 / m;
+
+                weights -= wGrad * learningRate;
+                b -= bGrad * learningRate;
+
+                rmse = Math.Sqrt(e.PointwisePower(2).Sum() / data.Y.Count);
                 errors.Add(rmse);
-                i++;
-            } while (i < maxIterationCount && error > maxError);
+                it++;
+            } while (it < maxIterationCount && error > maxError);
         }
 
         public double Predict(Vector<double> x)
