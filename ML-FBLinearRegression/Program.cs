@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -16,7 +16,7 @@ namespace ML_FBLinearRegression
         static void ComputePrecMetrics(LinearRegression model, Chunk data, out double RMSE, out double R2)
         {
             double rmseSum = 0;
-            double SSReg = 0, SSRes = 0;
+            double SSRes = 0, SSTot = 0;
 
             double targetMean = data.Y.Mean();
             for (int j = 0; j < data.X.RowCount; j++)
@@ -26,9 +26,9 @@ namespace ML_FBLinearRegression
                 var e = Math.Pow(target - predicted, 2);
                 rmseSum += e;
                 SSRes += Math.Pow(target - predicted, 2);
-                SSReg += Math.Pow(predicted - targetMean, 2);
+                SSTot += Math.Pow(target - targetMean, 2);
             }
-            R2 = SSReg / (SSReg+SSRes);
+            R2 = 1 - SSRes / SSTot;
             RMSE = Math.Sqrt(rmseSum / data.X.RowCount);
         }
 
@@ -50,10 +50,10 @@ namespace ML_FBLinearRegression
         static void Main(string[] args)
         {
             int featuresCount = 54;
-            double learningRate = 0.00005;
-            double L1Param = 0.00001;
-            int itCount = 3000;
-            double maxError = 0.0001;
+            double learningRate = 0.01;
+            double L1Param = 0.02;
+            int itCount = 400;
+            double maxError = 20;
             int chunkCount = 5;
 
             double[] rmseTest = new double[chunkCount];
@@ -75,23 +75,23 @@ namespace ML_FBLinearRegression
                 outputInfo.Add($"f{i}");
 
 
-            List<Chunk> chunks = DataSetReader.LoadData("dataset.csv", featuresCount, chunkCount, true, true);
+            List<Chunk> chunks = DataSetReader.LoadData("C:\\Users\\vkpankov\\Source\\Repos\\ML-FBLinearRegression\\" +
+                "ML-FBLinearRegression\\bin\\Debug\\dataset.csv", featuresCount, chunkCount, true, true);
             for (int i = 0; i < chunkCount; i++)
             {
                 Chunk testChunk = chunks[i];
                 Chunk trainChunk = JoinChunks(chunks.Except(new Chunk[] { testChunk }).ToList());
                 List<double> errors = new List<double>();
                 LinearRegression model = new LinearRegression(featuresCount);
-                model.Learn(trainChunk, learningRate, L1Param, maxError, itCount, ref errors);
+                model.Learn(trainChunk, learningRate, L1Param, maxError, itCount, ref errors, testChunk);
                 //Для сохранения весов в output.csv
                 for (int k = 0; k < model.weights.Count; k++)
                     chunkWeights[k][i] = model.weights[k];
                 ComputePrecMetrics(model, testChunk, out rmseTest[i], out r2Test[i]);
                 ComputePrecMetrics(model, trainChunk, out rmseTrain[i], out r2Train[i]);
-                Console.WriteLine($"T{i}: RMSETest={rmseTest[i]}, R2Test={r2Test[i]}, RMSETrain={rmseTrain[i]}, R2Train={r2Train[i]}, weights=({model.weights})");
+                Console.WriteLine($"T{i}: RMSETest={rmseTest[i]}, R2Test={r2Test[i]}, RMSETrain={rmseTrain[i]}, R2Train={r2Train[i]})");
                 Form1 chartForm = new Form1();
-                chartForm.Errors = errors;
-                chartForm.ShowDialog();
+   
             }
 
             //Запись RMSE, R2 и weights в CSV
