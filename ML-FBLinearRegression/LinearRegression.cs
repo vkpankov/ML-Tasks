@@ -1,4 +1,4 @@
-﻿using MathNet.Numerics.LinearAlgebra;
+using MathNet.Numerics.LinearAlgebra;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,21 +18,17 @@ namespace ML_FBLinearRegression
             b = new Random().NextDouble();
         }
 
-        public void Learn(Chunk data, double learningRate, double L1RegParam, double maxError, int maxIterationCount, ref List<double> errors)
+        public void Learn(Chunk data, double learningRate, double L1RegParam, double maxError, int maxIterationCount, ref List<double> errors, Chunk testData)
         {
             var m = data.X.RowCount;
-           
             var featuresCount = weights.Count;
-
-            int it = 1;
+            int it = 3;
             double error = 1;
             do
             {
-                double rmse = 100;
-
+                double rmse = 1;
                 Vector<double> wGrad = Vector<double>.Build.Dense(weights.Count);
                 double bGrad = 0;
-
                 var e = data.Y - this.Predict(data.X);
                 for (int i = 0; i < data.X.ColumnCount; i++)
                     wGrad[i] += e * data.X.Column(i);
@@ -40,11 +36,16 @@ namespace ML_FBLinearRegression
                 wGrad *= -2.0 / m;
 
                 weights -= wGrad * learningRate;
-                b -= bGrad * learningRate;
+                for(int k=0;k<weights.Count; k++)
+                    weights[k] -= Math.Min(weights[k], (Math.Sign(weights[k]) * L1RegParam));
 
+                b -= bGrad * learningRate;
                 rmse = Math.Sqrt(e.PointwisePower(2).Sum() / data.Y.Count);
+                error = rmse;
                 errors.Add(rmse);
-                it++;
+               
+      
+                    it++;
             } while (it < maxIterationCount && error > maxError);
         }
 
@@ -55,7 +56,6 @@ namespace ML_FBLinearRegression
         public Vector<double> Predict(Matrix<double> x)
         {
             var y = Vector<double>.Build.Dense(x.RowCount);
-           
             for(int i =0; i<x.RowCount; i++)
             {
                 y[i] = Predict(x.Row(i));
